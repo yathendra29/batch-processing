@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="input_CSV" format="csv">
+      <types:shape format="weave"><![CDATA[%dw 2.0
+
+type input_CSV = Array<{|  id: String,   Name: String,   Age: String,   Gender: String,   DOB: Date,   City: String|}> {"isQuotedString": "false",
+"header": "true",
+"headerLineNumber": "0"}
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+      </types:properties>
+    </types:type>
+    <types:type name="Output_json" format="json">
+      <types:shape format="weave" example="examples/new.json"><![CDATA[%dw 2.0
+
+type Output_json = Array<{|  std_id: Number {"typeId": "int"},   name: String,   age: Number {"typeId": "int"},   gender: String,   dob: String,   city: String|}> {"example": "[{\\\"std_id\\\":100,\\\"name\\\":\\\"ranjith\\\",\\\"age\\\":20,\\\"gender\\\":\\\"M\\\",\\\"dob\\\":\\\"1994-08-19\\\",\\\"city\\\":\\\"vki\\\"}]"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="outputCSV" format="csv">
+      <types:shape format="weave" example="examples/std1.csv"><![CDATA[%dw 2.0
+
+type outputCSV = Array<{|  id: String,   Name: String,   Age: String,   Gender: String,   DOJ: String,   City: String|}> {"isQuotedString": "false",
+"header": "true",
+"headerLineNumber": "0",
+"separator": ","}
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+        <types:property name="separator" value=","/>
+      </types:properties>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#302b525e-3395-4f07-8013-2d897a9687d2">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="input_CSV"/>
+        </types:message>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="Output_json"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#1c4cbd88-76d7-46db-a1b7-4fd4bf74c834"/>
+  <types:enrichment select="#75ce5299-734d-4bf2-9937-18e14c083018">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="input_CSV"/>
+        </types:message>
+      </types:input-event>
+      <types:output-event>
+        <types:message>
+          <types:payload type="Output_json"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#1d26f920-f3de-434d-9d0b-c5a6d8e138c9">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="outputCSV"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

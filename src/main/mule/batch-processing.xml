@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="4fece3f9-dd08-43ee-937f-80dfe6b43943" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="83d5a0e9-9da2-4723-a27d-8292ef2de098" />
+	<file:config name="File_Config1" doc:name="File Config" doc:id="229350be-2203-464b-9b61-5dc3ef8a8fa6" />
+	<vm:config name="VM_Config" doc:name="VM Config" doc:id="3f3c8d64-5b09-4c60-b11c-b637f1099bf3" >
+		<vm:queues >
+			<vm:queue queueName="Error_Queue" queueType="PERSISTENT" />
+		</vm:queues>
+	</vm:config>
+	<file:config name="File_Config2" doc:name="File Config" doc:id="2a6369ef-9721-4c4a-b854-1fbd1ae79586" >
+		<file:connection workingDir="D:\mule\batch" />
+	</file:config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="6fcdca35-5494-43b0-88fd-267900a9b83e" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Raghava$777" database="myfirstdb" />
+	</db:config>
+	<file:config name="File_Config3" doc:name="File Config" doc:id="ad2e4530-abdd-4cdc-ae4b-9ccadab74d1d" >
+		<file:connection workingDir="D:\mule\batch\failure" />
+	</file:config>
+	<flow name="batch-processing_intro" doc:id="3ef350e3-5a21-4094-a7b1-ee68f4e442f0" >
+		<http:listener doc:name="Listener" doc:id="0067561f-6e7d-486f-a85e-e32faed99707" config-ref="HTTP_Listener_config" path="/batch">
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="e715caa9-eee9-49c2-8cf8-7024d25c40af" message="before batch process : #[payload]"/>
+		<batch:job jobName="batch-processingBatch_Job" doc:id="b4ee66d3-bb63-4d05-8504-12f690d39c03" blockSize="3">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="c6ba7586-3938-4135-8ead-dcd8897698e2" acceptExpression="#[((payload.id as Number) mod 2)==0]">
+					<logger level="INFO" doc:name="Logger" doc:id="02dff3fe-572d-4597-a837-808bd28eac80" message="in batch step the payload is #[payload]"/>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="ef4caa5c-8554-4fd2-92ad-246fb623dbfb" size="2">
+						<logger level="INFO" doc:name="Logger" doc:id="010cfe75-38d7-4a40-910d-d8a288c3560f" message="one batch completed success"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="e5e6d750-7c81-4f69-b88d-68d6049fb855" message="on complete phase"/>
+				<ee:transform doc:name="explination" doc:id="63dcb7b8-f74f-400e-b10f-f2eba96df48a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"check batch job-blockSize
+batchstep -expressionPolicy
+batch aggregator size,
+"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<ee:transform doc:name="payload from postman" doc:id="347a7900-dc12-481f-b344-5301689a8115" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+    {"id":1,"name":"ganguly"},
+    {"id":2,"name":"sehwag"},
+    {"id":3,"name":"yuvraj"},
+    {"id":4,"name":"virat"},
+    {"id":5,"name":"kaif"},
+    {"id":6,"name":"kaif"},
+    {"id":7,"name":"kaif"},
+    {"id":8,"name":"kaif"},
+    {"id":9,"name":"kaif"},
+    {"id":10,"name":"kaif"},
+    {"id":11,"name":"kaif"}
+]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="Process_Failure_Records" doc:id="fbb03109-ed13-4bd1-9e15-a90667745d97" >
+		<http:listener doc:name="Listener" doc:id="d86692a3-089e-44bb-9617-56fba91aae22" config-ref="HTTP_Listener_config" path="/pfr"/>
+		<ee:transform doc:name="Transform Message" doc:id="1c4cbd88-76d7-46db-a1b7-4fd4bf74c834" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="input_payload" ><![CDATA[%dw 2.0
+output application/json
+---
+[2,4,"apple",8,"banana",12,14,"pine-apple",18,20]]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="a84f9ba7-57cc-4144-82bc-a62c9c0160cd" message="#[vars.input_payload]"/>
+		<set-payload value="#[vars.input_payload]" doc:name="Set Payload" doc:id="dcf8e006-f25b-45ca-a6ee-58ff69760896" />
+		<batch:job jobName="batch-processingBatch_Job3" doc:id="93e95c36-c6e7-4854-b624-a0d0072287c7" >
+			<batch:process-records >
+				<batch:step name="Batch_Step3" doc:id="cab03747-cde4-4ac4-99c2-abc2456195e5" >
+					<try doc:name="Try" doc:id="b6e75357-ad14-4af3-94c4-9be026914088" >
+						<logger level="INFO" doc:name="Logger" doc:id="b481539d-3f46-4ad9-9b34-41ac20e1f538" message='#["Half Payload:: " ++ payload/2]' />
+						<set-payload value="#[payload/2]" doc:name="Set Payload" doc:id="a4aa81d8-71f0-475f-aa97-2d71e9420f29" />
+						<error-handler >
+							<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7c069644-6bf3-46b4-b591-bf3cee327e01" >
+								<vm:publish queueName="Error_Queue" doc:name="Publish" doc:id="f7577877-2059-4761-a6f2-baee10aa4be3" config-ref="VM_Config"/>
+							</on-error-continue>
+						</error-handler>
+					</try>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="9a1bbc8a-3799-4aea-b6f5-0ccb977e864f" size="3">
+						<logger level="INFO" doc:name="Logger" doc:id="ef03159e-bdd8-4010-b34c-2fd544381efe" message="#[payload]"/>
+						<ee:transform doc:name="Transform Message" doc:id="daa3f658-347c-4c88-8af7-93ddc305402f" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<file:write doc:name="Write" doc:id="359251e6-bf9e-44b5-9151-029aef797312" config-ref="File_Config" path="#['D:\\mule\\batch\\success\\' ++ now() as String{format:'yyyy-MM-dd-hh-mm-ss'} ++ &quot;-&quot; ++  (random() * 1000) ++ &quot;.txt&quot;]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="e9fe8fb1-12c0-4957-9ef3-afdf2efe2aeb" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+		<ee:transform doc:name="Transform Message" doc:id="717b4769-858a-49a3-9396-56fd11b18795" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"batch completed succesfully"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="process_failure_records_continuation" doc:id="0c561d5d-da4f-41f6-8d85-9de7d248ba63" >
+		<vm:listener queueName="Error_Queue" doc:name="Listener" doc:id="7256df7a-beaf-4fa2-b9dd-4c7627424ab8" config-ref="VM_Config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c0a08080-cf10-4150-8e4a-039b591b7a5c" message='#["payload Received from VM Queue is :: " ++ payload]'/>
+	</flow>
+	<flow name="batch-processing_handling_errors" doc:id="fcba5826-6046-4be0-aa03-8682537a12c8" >
+		<http:listener doc:name="Listener" doc:id="74dfcdca-4140-42e3-9337-83e163dfe863" config-ref="HTTP_Listener_config" path="/he"/>
+		<logger level="INFO" doc:name="Logger" doc:id="af152419-ae08-4027-91d6-dcbfdb62bc01" message="before batch"/>
+		<batch:job jobName="batch-processingBatch_Job1" doc:id="a98e8715-5b87-41b6-b0ee-92d05189b668" blockSize="5" maxFailedRecords="2">
+			<batch:process-records >
+				<batch:step name="Batch_Step1" doc:id="879e6401-9a82-48ab-8a89-cd877c0910aa" >
+					<choice doc:name="Choice" doc:id="f9b40762-45ef-44d4-90e9-368ac8508451" >
+						<when expression="#[payload.id==2]">
+							<logger level="INFO" doc:name="Logger" doc:id="2e4ebd1d-8152-4edd-af46-9e68785e70f4" />
+							<raise-error doc:name="Raise error" doc:id="2abeb77d-3255-44b8-8ea0-afe8923fbb91" type="CUSTOM:ERROR"/>
+						</when>
+						<otherwise >
+							<logger level="INFO" doc:name="Logger" doc:id="e4449a46-1d02-4ae3-a4a4-7c3800ec1f05" message="#[payload]"/>
+						</otherwise>
+					</choice>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="a477343e-e3f7-46fb-9a5c-a8edfc26bdab" size="2">
+						<logger level="INFO" doc:name="Logger" doc:id="ad4aba74-dd48-45a4-98e8-6ff791ee978a" message="aggregator"/>
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step_ISOLATING_ERRORS_nd_LOGGING" doc:id="26e55fd9-d7d5-475d-885d-61232c6adae7" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger" doc:id="745ed21c-d397-423d-8fd5-71eba4456ab6" message="Error:::: #[payload]"/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="dedace69-2e84-4340-bdad-1eb285e7d465" message="On complete phase"/>
+				<ee:transform doc:name="Transform Message" doc:id="54506676-1d42-45ed-b0f7-79a11e1266c7" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/jSON
+---
+" on batch_job keep max_failed_records more than 0
+Check batch_step_2 -->> Accept_policy:: only_failures"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="100RecordsCSV_storing_10_in_jsonFile" doc:id="9c933b9b-f603-462e-8cf2-e1fb0346b9cf" >
+		<http:listener doc:name="Listener" doc:id="73ea9b23-b566-4eb8-8f42-fca99aea9ab0" config-ref="HTTP_Listener_config" path="/batch2"/>
+		<file:read doc:name="Read" doc:id="7e0d1b5a-7ed5-4a7c-be52-68c66d08b098" config-ref="File_Config" path="C:\Users\Admin\Documents\std.csv"/>
+		<logger level="INFO" doc:name="Logger" doc:id="8bf18ff0-1e27-47fd-b75b-9df0d6611b3d" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="302b525e-3395-4f07-8013-2d897a9687d2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	std_id: payload01.id as Number,
+	name: payload01.Name,
+	age: payload01.Age as Number,
+	gender: payload01.Gender,
+	dob: payload01.DOB as String,
+	city: payload01.City
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="batch-processingBatch_Job2" doc:id="9f666417-74bc-4f82-920b-d38b55d27561" blockSize="10">
+			<batch:process-records >
+				<batch:step name="Batch_Step2" doc:id="7c08b74b-c1db-4a8f-b457-5b28176d9538" >
+					<logger level="INFO" doc:name="Logger" doc:id="facee92e-0391-43aa-bc99-7642b65ca74f" message="batch step"/>
+					<ee:transform doc:name="Transform Message" doc:id="3f4b6a7c-72ea-4b11-9425-10c0e2ebe3be" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"std_id":payload.std_id,
+	"name":payload.name,
+	"age":payload.age,
+	"gender":payload.gender,
+	"dob":payload.dob,
+	"city":payload.city
+	
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="f2741a31-57ee-406e-aeac-ee0094001b49" size="10">
+						<ee:transform doc:name="Transform Message" doc:id="0b76a60e-edf5-48d6-86db-f311a6332f55" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Student_Bio":payload map (data,index) -> {
+		"Student_ID": data.std_id,
+		"Student_Name": data.name,
+		"Student_Gender": data.gender,
+		"Student_Age": data.age as String ++ "("++ data.dob as String ++ ")",
+		"Student_Address": data.city
+			}
+}
+
+]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<file:write doc:name="Write" doc:id="4db0f5ff-9c86-4883-b40c-91dadc4de6ff" config-ref="File_Config" path="#['D:\\mule\\batch\\' ++ (random() * 1000) ++ &quot;.txt&quot;]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="615782c5-7f52-42ab-9bf8-30537b32b4a9" />
+			</batch:on-complete>
+		</batch:job>
+		<ee:transform doc:name="Transform Message" doc:id="26dfa271-a0c9-47ca-aa47-d90d24ab42e9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="Reading_inserting-db_capturing_failed_records_and_stating_file(exist_illegalContent)" doc:id="58df481e-3bb5-493a-9a37-eade650ee1a2" >
+		<http:listener doc:name="Keep scheduler" doc:id="45011606-539e-46ca-bda2-4c04647366a5" config-ref="HTTP_Listener_config" path="/batch5"/>
+		<file:read doc:name="Read" doc:id="294f94ab-d49d-4a7e-b580-8c025937e2dd" config-ref="File_Config2" path="std2.csv"/>
+		<ee:transform doc:name="Transform Message" doc:id="75ce5299-734d-4bf2-9937-18e14c083018" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	std_id: payload01.id as Number,
+	name: payload01.Name,
+	age: payload01.Age as Number,
+	gender: payload01.Gender,
+	dob: payload01.DOB as String,
+	city: payload01.City
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="batch-processingBatch_Job4" doc:id="2aedb303-181b-41f0-af31-2f28fa1f77fd" blockSize="50">
+			<batch:process-records >
+				<batch:step name="Batch_Step4" doc:id="007e1e8d-caa8-4c0c-af18-0de35242476f" >
+					<try doc:name="Try" doc:id="c41c02de-dabb-4958-8274-cedb07bb79dc" >
+						<db:insert doc:name="Insert" doc:id="3dcb26c5-fc73-4b57-854f-b6aee801b376" config-ref="Database_Config">
+							<db:sql ><![CDATA[insert into myfirstdb.studentdetails values(:std_id,:name,:age,:gender,:dob,:city)]]></db:sql>
+							<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+						</db:insert>
+						<error-handler >
+							<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="825698e8-5ea0-46f3-b5de-30b9d0a6bdbc" >
+								<file:write doc:name="Write" doc:id="dd70da1f-bebc-4382-a8f9-ce95b7628c5e" config-ref="File_Config3" path='#["errorResponse" ++ (random() * 10000) ++ ".txt"]'/>
+							</on-error-continue>
+						</error-handler>
+					</try>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="b1fcf834-10d0-4e9f-9f97-0e91f9d89a87" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+		<file:delete doc:name="Delete" doc:id="7752510d-acbd-4cd7-88af-a742198610cc" config-ref="File_Config2" path="std2.csv"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="50005d18-ff7f-4290-9396-a142e6041ff4" >
+				<logger level="INFO" doc:name="Logger" doc:id="84ca3f72-b18d-4cbb-ab59-b1088dd37119" message="file is empty or illegal content"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
